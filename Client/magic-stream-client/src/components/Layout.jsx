@@ -1,15 +1,10 @@
-import { Outlet } from 'react-router-dom';
-import Header from './header/Header';
+import { Outlet } from "react-router-dom";
 
-const Layout = ({ handleLogout }) => {
+const Layout = () => {
     return (
-        <div className="app-shell">
-            <Header handleLogout={handleLogout} />
-            <main className="app-main">
-                <Outlet />
-            </main>
-        </div>
-    );
-};
-
-export default Layout;
+        <main>
+            <Outlet/>
+        </main>
+    )
+}
+export default Layout

@@ -1,78 +1,96 @@
-import { useCallback, useEffect } from 'react';
-import axiosPrivate from '../api/axiosPrivateConfig';
+import {useEffect} from 'react';
+import axios from 'axios';
+
 import useAuth from './useAuth';
 
-const useAxiosPrivate = () => {
-    const { setAuth } = useAuth();
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const handleRefreshFailure = useCallback(() => {
-        localStorage.removeItem('user');
-        setAuth(null);
-    }, [setAuth]);
+const useAxiosPrivate = () =>{
 
-    useEffect(() => {
-        let isRefreshing = false;
-        let failedQueue = [];
+    const axiosAuth = axios.create({
+        baseURL: apiUrl,
+        withCredentials: true, // important for HTTP-only cookies
+    });
 
-        const processQueue = (error) => {
-            failedQueue.forEach((promise) => {
-                if (error) {
-                    promise.reject(error);
-                    return;
-                }
-                promise.resolve();
-            });
 
-            failedQueue = [];
-        };
+    const {auth,setAuth} = useAuth();
 
-        const responseInterceptor = axiosPrivate.interceptors.response.use(
-            (response) => response,
-            async (error) => {
-                const originalRequest = error.config;
+    let isRefreshing = false;
+    let failedQueue = [];
 
-                if (!originalRequest) {
-                    return Promise.reject(error);
-                }
-
-                if (originalRequest.url?.includes('/refresh') && error.response?.status === 401) {
-                    handleRefreshFailure();
-                    return Promise.reject(error);
-                }
-
-                if (error.response?.status === 401 && !originalRequest._retry) {
-                    if (isRefreshing) {
-                        return new Promise((resolve, reject) => {
-                            failedQueue.push({ resolve, reject });
-                        }).then(() => axiosPrivate(originalRequest));
-                    }
-
-                    originalRequest._retry = true;
-                    isRefreshing = true;
-
-                    try {
-                        await axiosPrivate.post('/refresh');
-                        processQueue(null);
-                        return axiosPrivate(originalRequest);
-                    } catch (refreshError) {
-                        processQueue(refreshError);
-                        handleRefreshFailure();
-                        return Promise.reject(refreshError);
-                    } finally {
-                        isRefreshing = false;
-                    }
-                }
-
-                return Promise.reject(error);
+    // Helper to process queued requests after token refresh
+    const processQueue = (error, response = null) => {
+        failedQueue.forEach(prom => {
+            if (error) {
+            prom.reject(error);
+            } else {
+            prom.resolve(response);
             }
+        });
+
+        failedQueue = [];
+    };
+
+     useEffect(() => {
+
+        axiosAuth.interceptors.response.use(
+        response => response,
+        async error => {
+            console.log('⚠ Interceptor caught error:', error);
+            const originalRequest = error.config;
+
+        if (originalRequest.url.includes('/refresh') && error.response.status === 401) {
+            //edge case where the refresh token is invalid or expired
+            console.error('❌ Refresh token has expired or is invalid.');
+            return Promise.reject(error); // fail directly, no retry
+        }
+
+            if (error.response && error.response.status === 401 && !originalRequest._retry) {
+
+                if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+                })
+                .then(() => axiosAuth(originalRequest))
+                .catch(err => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            return new Promise((resolve, reject) => {
+                axiosAuth
+                .post('/refresh')
+                .then(() => {
+                
+                    processQueue(null);
+
+                axiosAuth(originalRequest)
+                    .then(resolve)
+                    .catch(reject);
+
+                })
+                .catch(refreshError => {
+
+                        processQueue(refreshError, null);
+                        
+                        localStorage.removeItem('user');
+                        setAuth(null); // Clear auth state
+                        reject(refreshError); // fail the original promise chain
+                })
+                .finally(() => {
+                        isRefreshing = false;
+                });
+            });
+            }
+
+            return Promise.reject(error);
+        }
         );
 
-        return () => {
-            axiosPrivate.interceptors.response.eject(responseInterceptor);
-        };
-    }, [handleRefreshFailure]);
+    }, [auth]);
 
-    return axiosPrivate;
-};
+    return axiosAuth;
+}
 
 export default useAxiosPrivate;

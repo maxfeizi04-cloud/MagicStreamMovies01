@@ -6,13 +6,11 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// User 表示 users 集合中的完整用户文档。
-// 对学习者来说，这个结构很适合观察“数据库模型”和“接口模型”重叠时的写法。
 type User struct {
 	ID              bson.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	UserID          string        `json:"user_id" bson:"user_id"`
-	FirstName       string        `json:"first_name" bson:"first_name" validate:"required,min=1,max=100"`
-	LastName        string        `json:"last_name" bson:"last_name" validate:"required,min=1,max=100"`
+	FirstName       string        `json:"first_name" bson:"first_name" validate:"required,min=2,max=100"`
+	LastName        string        `json:"last_name" bson:"last_name" validate:"required,min=2,max=100"`
 	Email           string        `json:"email" bson:"email" validate:"required,email"`
 	Password        string        `json:"password" bson:"password" validate:"required,min=6"`
 	Role            string        `json:"role" bson:"role" validate:"oneof=ADMIN USER"`
@@ -22,16 +20,10 @@ type User struct {
 	RefreshToken    string        `json:"refresh_token" bson:"refresh_token"`
 	FavouriteGenres []Genre       `json:"favourite_genres" bson:"favourite_genres" validate:"required,dive"`
 }
-
-// UserLogin 是登录接口专用请求模型。
-// 只保留登录所需的最小字段集合。
 type UserLogin struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 }
-
-// UserResponse 是登录成功后返回给前端的数据结构。
-// 它避免把数据库中的所有字段直接暴露出去。
 type UserResponse struct {
 	UserId          string  `json:"user_id"`
 	FirstName       string  `json:"first_name"`
