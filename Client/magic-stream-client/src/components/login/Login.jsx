@@ -1,106 +1,89 @@
-import {useState} from 'react';
+import { useState } from 'react';
 import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import axiosClient from '../../api/axiosConfig';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import useLanguage from '../../hooks/useLanguage';
 import logo from '../../assets/MagicStreamLogo.png';
 
 const Login = () => {
-    
-    const {setAuth} = useAuth();
+    const { setAuth } = useAuth();
+    const { t } = useLanguage();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
     const from = location.state?.from?.pathname || "/";
-    
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         setLoading(true);
-        setError(null);       
+        setError(null);
 
         try {
             const response = await axiosClient.post('/login', { email, password });
-            console.log(response.data);
-            if (response.data.error) {
-                setError(response.data.error);
-                return;
-            }
-           // console.log(response.data);
             setAuth(response.data);
-            
-           // localStorage.setItem('user', JSON.stringify(response.data));
-            // Handle successful login (e.g., store token, redirect)
-           navigate(from, {replace: true});
-           //navigate('/');
-
-        } catch (err) {
-            console.error(err);
-            setError('Invalid email or password');
+            navigate(from, { replace: true });
+        } catch (error) {
+            setError(error.response?.data?.error || t('login.invalidCredentials'));
         } finally {
             setLoading(false);
         }
-    }; 
+    };
+
     return (
-        <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
-            <div className="login-card shadow p-4 rounded bg-white" style={{maxWidth: 400, width: '100%'}}>
-                <div className="text-center mb-4">
-                    <img src={logo} alt="Logo" width={60} className="mb-2" />
-                    <h2 className="fw-bold">Sign In</h2>
-                    <p className="text-muted">Welcome back! Please login to your account.</p>
+        <Container className="auth-shell">
+            <div className="auth-panel">
+                <div className="auth-panel__brand">
+                    <img src={logo} alt="MagicStream logo" width={64} className="mb-3" />
+                    <p className="section-eyebrow">{t('login.eyebrow')}</p>
+                    <h2>{t('login.title')}</h2>
+                    <p>{t('login.description')}</p>
                 </div>
-                {error && <div className="alert alert-danger py-2">{error}</div>}
+
+                {error ? <div className="alert alert-danger py-2">{error}</div> : null}
+
                 <Form onSubmit={handleSubmit}>
                     <Form.Group controlId="formBasicEmail" className="mb-3">
-                        <Form.Label>Email address</Form.Label>
+                        <Form.Label>{t('login.emailLabel')}</Form.Label>
                         <Form.Control
                             type="email"
-                            placeholder="Enter email"
+                            placeholder={t('login.emailPlaceholder')}
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(event) => setEmail(event.target.value)}
                             required
                             autoFocus
                         />
                     </Form.Group>
 
                     <Form.Group controlId="formBasicPassword" className="mb-3">
-                        <Form.Label>Password</Form.Label>
+                        <Form.Label>{t('login.passwordLabel')}</Form.Label>
                         <Form.Control
                             type="password"
-                            placeholder="Password"
+                            placeholder={t('login.passwordPlaceholder')}
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(event) => setPassword(event.target.value)}
                             required
                         />
                     </Form.Group>
 
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        className="w-100 mb-2"
-                        disabled={loading}
-                        style={{fontWeight: 600, letterSpacing: 1}}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Logging in...
-                            </>
-                        ) : 'Login'}
+                    <Button variant="dark" type="submit" className="w-100 auth-submit" disabled={loading}>
+                        {loading ? t('login.submitting') : t('login.submit')}
                     </Button>
                 </Form>
+
                 <div className="text-center mt-3">
-                    <span className="text-muted">Don't have an account? </span>
-                    <Link to="/register" className="fw-semibold">Register here</Link>
+                    <span className="text-muted">{t('login.needAccount')} </span>
+                    <Link to="/register" className="fw-semibold">{t('login.registerHere')}</Link>
                 </div>
             </div>
         </Container>
-    )
-}
+    );
+};
+
 export default Login;

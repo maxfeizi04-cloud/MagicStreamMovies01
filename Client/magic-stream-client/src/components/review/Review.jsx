@@ -4,6 +4,7 @@ import {useParams} from 'react-router-dom'
 //import axiosPrivate from '../../api/axiosPrivateConfig';
 import useAxiosPrivate from '../../hooks/useAxiosPrivate';
 import useAuth from '../../hooks/useAuth';
+import useLanguage from '../../hooks/useLanguage';
 import Movie from '../movie/Movie'
 import Spinner from '../spinner/Spinner';
 
@@ -13,7 +14,8 @@ const Review = () => {
     const [loading, setLoading] = useState(false);
     const revText = useRef();
     const { imdb_id } = useParams();
-    const {auth,setAuth} = useAuth();
+    const {auth} = useAuth();
+    const { t } = useLanguage();
     const axiosPrivate = useAxiosPrivate();
 
     useEffect(() => {
@@ -32,7 +34,7 @@ const Review = () => {
 
         fetchMovie();
 
-    }, []);
+    }, [axiosPrivate, imdb_id]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -72,7 +74,7 @@ const Review = () => {
             <Spinner />
         ) : (
             <div className="container py-5">
-                <h2 className="text-center mb-4">Admin Review</h2>
+                <h2 className="text-center mb-4">{t('review.title')}</h2>
                 <div className="row justify-content-center">
                     <div className="col-12 col-md-6 d-flex align-items-center justify-content-center mb-4 mb-md-0">
                         <div className="w-100 shadow rounded p-3 bg-white d-flex justify-content-center align-items-center">
@@ -84,20 +86,20 @@ const Review = () => {
                             {auth && auth.role === "ADMIN" ? (
                                 <Form onSubmit={handleSubmit}>
                                     <Form.Group className="mb-3" controlId="adminReviewTextarea">
-                                        <Form.Label>Admin Review</Form.Label>
+                                        <Form.Label>{t('review.label')}</Form.Label>
                                         <Form.Control
                                             ref={revText}
                                             required
                                             as="textarea"
                                             rows={8}
                                             defaultValue={movie?.admin_review}
-                                            placeholder="Write your review here..."
+                                            placeholder={t('review.placeholder')}
                                             style={{ resize: "vertical" }}
                                         />
                                     </Form.Group>
                                     <div className="d-flex justify-content-end">
                                         <Button variant="info" type="submit">
-                                            Submit Review
+                                            {t('review.submit')}
                                         </Button>
                                     </div>
                                 </Form> ):(

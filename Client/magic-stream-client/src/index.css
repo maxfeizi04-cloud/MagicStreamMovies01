@@ -1,0 +1,51 @@
+:root {
+  --font-body: "Segoe UI Variable", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-display: Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-body);
+  color: #1b2733;
+  background:
+    radial-gradient(circle at top, rgba(242, 107, 58, 0.14), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(135, 243, 207, 0.12), transparent 24%),
+    linear-gradient(180deg, #fffdf9 0%, #f6f1e8 100%);
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: #1b2733;
+  background: transparent;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+html[data-lang='zh'] .section-eyebrow,
+html[data-lang='zh'] .brand-mark__eyebrow,
+html[data-lang='zh'] .status-chip,
+html[data-lang='zh'] .profile-details dt {
+  letter-spacing: 0.08em;
+  text-transform: none;
+}

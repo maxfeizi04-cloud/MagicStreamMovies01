@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
+	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/middleware"
 	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -16,64 +18,96 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func main() {
-	// This is the main function
+func collectAllowedOrigins(configValue string) []string {
+	defaultOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173"}
+	uniqueOrigins := make(map[string]struct{}, len(defaultOrigins))
+	origins := make([]string, 0, len(defaultOrigins)+2)
 
+	for _, origin := range defaultOrigins {
+		if _, exists := uniqueOrigins[origin]; exists {
+			continue
+		}
+		uniqueOrigins[origin] = struct{}{}
+		origins = append(origins, origin)
+	}
+
+	if configValue == "" {
+		return origins
+	}
+
+	for _, origin := range strings.Split(configValue, ",") {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed == "" {
+			continue
+		}
+
+		if _, exists := uniqueOrigins[trimmed]; exists {
+			continue
+		}
+
+		uniqueOrigins[trimmed] = struct{}{}
+		origins = append(origins, trimmed)
+	}
+
+	return origins
+}
+
+func main() {
 	router := gin.Default()
 
-	router.GET("/hello", func(c *gin.Context) {
-		c.String(200, "Hello, MagicStreamMovies!")
-	})
-
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Println("Warning: unable to find .env file")
 	}
 
-	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	router.GET("/hello", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello, MagicStreamMovies!")
+	})
 
-	var origins []string
-	if allowedOrigins != "" {
-		origins = strings.Split(allowedOrigins, ",")
-		for i := range origins {
-			origins[i] = strings.TrimSpace(origins[i])
-			log.Println("Allowed Origin:", origins[i])
-		}
-	} else {
-		origins = []string{"http://localhost:5173"}
-		log.Println("Allowed Origin: http://localhost:5173")
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	origins := collectAllowedOrigins(allowedOrigins)
+	for _, origin := range origins {
+		log.Println("Allowed Origin:", origin)
 	}
 
-	config := cors.Config{}
-	config.AllowOrigins = origins
-	config.AllowMethods = []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}
-	//config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
-	config.ExposeHeaders = []string{"Content-Length"}
-	config.AllowCredentials = true
-	config.MaxAge = 12 * time.Hour
+	config := cors.Config{
+		AllowOrigins:     origins,
+		AllowMethods:     []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
 
 	router.Use(cors.New(config))
 	router.Use(gin.Logger())
 
-	var client *mongo.Client = database.Connect()
+	api := router.Group("/api")
+	api.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message":   "MagicStream API is running",
+			"service":   "magicstream-api",
+			"status":    "ok",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
 
+	var client *mongo.Client = database.Connect()
 	if err := client.Ping(context.Background(), nil); err != nil {
 		log.Fatalf("Failed to reach server: %v", err)
 	}
 	defer func() {
-		err := client.Disconnect(context.Background())
-		if err != nil {
+		if err := client.Disconnect(context.Background()); err != nil {
 			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
 		}
-
 	}()
 
-	routes.SetupUnProtectedRoutes(router, client)
-	routes.SetupProtectedRoutes(router, client)
+	routes.SetupUnProtectedRoutes(api, client)
+
+	protected := api.Group("")
+	protected.Use(middleware.AuthMiddleWare())
+	routes.SetupProtectedRoutes(protected, client)
 
 	if err := router.Run(":8080"); err != nil {
 		fmt.Println("Failed to start server", err)
 	}
-
 }
