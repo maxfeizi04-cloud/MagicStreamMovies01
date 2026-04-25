@@ -17,12 +17,17 @@ import (
 )
 
 func main() {
-	// This is the main function
-
 	router := gin.Default()
 
 	router.GET("/hello", func(c *gin.Context) {
 		c.String(200, "Hello, MagicStreamMovies!")
+	})
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"service": "MagicStream API",
+			"status":  "ok",
+			"time":    time.Now().UTC(),
+		})
 	})
 
 	err := godotenv.Load(".env")
@@ -30,18 +35,9 @@ func main() {
 		log.Println("Warning: unable to find .env file")
 	}
 
-	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
-
-	var origins []string
-	if allowedOrigins != "" {
-		origins = strings.Split(allowedOrigins, ",")
-		for i := range origins {
-			origins[i] = strings.TrimSpace(origins[i])
-			log.Println("Allowed Origin:", origins[i])
-		}
-	} else {
-		origins = []string{"http://localhost:5173"}
-		log.Println("Allowed Origin: http://localhost:5173")
+	origins := resolveAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
+	for _, origin := range origins {
+		log.Println("Allowed Origin:", origin)
 	}
 
 	config := cors.Config{}
@@ -75,5 +71,39 @@ func main() {
 	if err := router.Run(":8080"); err != nil {
 		fmt.Println("Failed to start server", err)
 	}
+}
 
+func resolveAllowedOrigins(raw string) []string {
+	origins := []string{
+		"http://localhost:5173",
+		"http://127.0.0.1:5173",
+	}
+	seen := map[string]struct{}{}
+	resolved := make([]string, 0, len(origins)+2)
+
+	addOrigin := func(origin string) {
+		origin = strings.TrimSpace(origin)
+		if origin == "" {
+			return
+		}
+		if _, exists := seen[origin]; exists {
+			return
+		}
+		seen[origin] = struct{}{}
+		resolved = append(resolved, origin)
+	}
+
+	for _, origin := range origins {
+		addOrigin(origin)
+	}
+
+	if raw == "" {
+		return resolved
+	}
+
+	for _, origin := range strings.Split(raw, ",") {
+		addOrigin(origin)
+	}
+
+	return resolved
 }

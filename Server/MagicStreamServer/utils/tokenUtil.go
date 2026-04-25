@@ -9,6 +9,7 @@ import (
 	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -22,10 +23,16 @@ type SignedDetails struct {
 	jwt.RegisteredClaims
 }
 
-var SECRET_KEY string = os.Getenv("SECRET_KEY")
-var SECRET_REFRESH_KEY string = os.Getenv("SECRET_REFRESH_KEY")
-
 func GenerateAllTokens(email, firstName, lastName, role, userId string) (string, string, error) {
+	secretKey, err := loadEnvValue("SECRET_KEY")
+	if err != nil {
+		return "", "", err
+	}
+	refreshSecretKey, err := loadEnvValue("SECRET_REFRESH_KEY")
+	if err != nil {
+		return "", "", err
+	}
+
 	claims := &SignedDetails{
 		Email:     email,
 		FirstName: firstName,
@@ -39,8 +46,7 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(SECRET_KEY))
-
+	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", "", err
 	}
@@ -58,18 +64,16 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	signedRefreshToken, err := refreshToken.SignedString([]byte(SECRET_REFRESH_KEY))
-
+	signedRefreshToken, err := refreshToken.SignedString([]byte(refreshSecretKey))
 	if err != nil {
 		return "", "", err
 	}
 
 	return signedToken, signedRefreshToken, nil
-
 }
 
-func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (err error) {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
 	updateAt, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -82,48 +86,36 @@ func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (
 		},
 	}
 
-	var userCollection *mongo.Collection = database.OpenCollection("users", client)
-
-	_, err = userCollection.UpdateOne(ctx, bson.M{"user_id": userId}, updateData)
-
-	if err != nil {
-		return err
-	}
-	return nil
+	userCollection := database.OpenCollection("users", client)
+	_, err := userCollection.UpdateOne(ctx, bson.M{"user_id": userId}, updateData)
+	return err
 }
 
 func GetAccessToken(c *gin.Context) (string, error) {
-	// authHeader := c.Request.Header.Get("Authorization")
-	// if authHeader == "" {
-	// 	return "", errors.New("Authorization header is required")
-	// }
-	// tokenString := authHeader[len("Bearer "):]
-
-	// if tokenString == "" {
-	// 	return "", errors.New("Bearer token is required")
-	// }
-	tokenString, err := c.Cookie("access_token")
+	tokenString, err := c.Cookie(AccessTokenCookieName())
 	if err != nil {
-
 		return "", err
 	}
 
 	return tokenString, nil
-
 }
 
 func ValidateToken(tokenString string) (*SignedDetails, error) {
-	claims := &SignedDetails{}
+	secretKey, err := loadEnvValue("SECRET_KEY")
+	if err != nil {
+		return nil, err
+	}
 
+	claims := &SignedDetails{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return nil, err
+		return nil, errors.New("unexpected signing method")
 	}
 
 	if claims.ExpiresAt.Time.Before(time.Now()) {
@@ -131,56 +123,52 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 	}
 
 	return claims, nil
-
 }
 
 func GetUserIdFromContext(c *gin.Context) (string, error) {
 	userId, exists := c.Get("userId")
-
 	if !exists {
 		return "", errors.New("userId does not exists in this context")
 	}
 
 	id, ok := userId.(string)
-
 	if !ok {
 		return "", errors.New("unable to retrieve userId")
 	}
 
 	return id, nil
-
 }
 
 func GetRoleFromContext(c *gin.Context) (string, error) {
 	role, exists := c.Get("role")
-
 	if !exists {
 		return "", errors.New("role does not exists in this context")
 	}
 
 	memberRole, ok := role.(string)
-
 	if !ok {
 		return "", errors.New("unable to retrieve userId")
 	}
 
 	return memberRole, nil
-
 }
 
 func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
+	refreshSecretKey, err := loadEnvValue("SECRET_REFRESH_KEY")
+	if err != nil {
+		return nil, err
+	}
+
 	claims := &SignedDetails{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-
-		return []byte(SECRET_REFRESH_KEY), nil
+		return []byte(refreshSecretKey), nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return nil, err
+		return nil, errors.New("unexpected signing method")
 	}
 
 	if claims.ExpiresAt.Time.Before(time.Now()) {
@@ -188,4 +176,15 @@ func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
 	}
 
 	return claims, nil
+}
+
+func loadEnvValue(key string) (string, error) {
+	_ = godotenv.Load(".env")
+
+	value := os.Getenv(key)
+	if value == "" {
+		return "", errors.New(key + " is not set")
+	}
+
+	return value, nil
 }

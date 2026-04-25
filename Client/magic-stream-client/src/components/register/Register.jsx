@@ -1,184 +1,228 @@
-import { useState, useEffect} from 'react';
-import Container from 'react-bootstrap/Container';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import axiosClient from '../../api/axiosConfig';
-import { useNavigate, Link } from 'react-router-dom';
-import logo from '../../assets/MagicStreamLogo.png';
+import { useEffect, useState } from "react";
+import Button from "react-bootstrap/Button";
+import Container from "react-bootstrap/Container";
+import Form from "react-bootstrap/Form";
+import { Link, useNavigate } from "react-router-dom";
+import axiosClient from "../../api/axiosConfig";
+import useAuth from "../../hooks/useAuth";
+import useLanguage from "../../hooks/useLanguage";
+import logo from "../../assets/MagicStreamLogo.png";
+import "../auth/AuthPage.css";
 
 const Register = () => {
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [favouriteGenres, setFavouriteGenres] = useState([]);
-    const [genres, setGenres] = useState([]);
+  const { auth, setAuth } = useAuth();
+  const { t, translateGenre } = useLanguage();
 
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [favouriteGenres, setFavouriteGenres] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    const handleGenreChange = (e) => {
-        const options = Array.from(e.target.selectedOptions);
-        setFavouriteGenres(options.map(opt => ({
-            genre_id: Number(opt.value),
-            genre_name: opt.label
-        })));
-    };
-   const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-        const defaultRole ="USER";
+  const navigate = useNavigate();
 
-        console.log(defaultRole);
+  useEffect(() => {
+    if (auth) {
+      navigate("/", { replace: true });
+    }
+  }, [auth, navigate]);
 
-        if (password !== confirmPassword) {
-            setError('Passwords do not match.');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const payload = {
-                first_name: firstName,
-                last_name: lastName,
-                email,
-                password,
-                role: defaultRole,
-                favourite_genres: favouriteGenres
-            };
-            const response = await axiosClient.post('/register', payload);
-            if (response.data.error) {
-                setError(response.data.error);
-                return;
-            }
-            // Registration successful, redirect to login
-            navigate('/login', { replace: true });
-        } catch (err) {
-            setError('Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const response = await axiosClient.get("/genres");
+        setGenres(response.data);
+      } catch (fetchError) {
+        console.error("Error fetching movie genres:", fetchError);
+      }
     };
 
+    fetchGenres();
+  }, []);
 
-    useEffect(() => {
-        const fetchGenres = async () => {
-        try {
-            const response = await axiosClient.get('/genres');
-            setGenres(response.data);
-        } catch (error) {
-            console.error('Error fetching movie genres:', error);
-        }
-        };
-    
-        fetchGenres();
-    }, []);
+  const toggleGenre = (genre) => {
+    setFavouriteGenres((currentGenres) => {
+      const alreadySelected = currentGenres.some(
+        (item) => item.genre_id === genre.genre_id,
+      );
 
+      if (alreadySelected) {
+        return currentGenres.filter((item) => item.genre_id !== genre.genre_id);
+      }
 
-    return (
+      return [...currentGenres, genre];
+    });
+  };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError(null);
 
-       <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
-        <div className="login-card shadow p-4 rounded bg-white" style={{maxWidth: 400, width: '100%'}}>
-                <div className="text-center mb-4">
-                     <img src={logo} alt="Logo" width={60} className="mb-2" />
-                    <h2 className="fw-bold">Register</h2>
-                    <p className="text-muted">Create your Magic Movie Stream account.</p>
-                    {error && <div className="alert alert-danger py-2">{error}</div>}                
-                </div>
-             <Form onSubmit={handleSubmit}>
-                     <Form.Group className="mb-3">
-                        <Form.Label>First Name</Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="Enter first name"
-                            value={firstName}
-                            onChange={e => setFirstName(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                     <Form.Group className="mb-3">
-                        <Form.Label>Last Name</Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="Enter last name"
-                            value={lastName}
-                            onChange={e => setLastName(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                     <Form.Group className="mb-3">
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control
-                            type="email"
-                            placeholder="Enter email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                     <Form.Group className="mb-3">
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
-                     <Form.Group className="mb-3">
-                        <Form.Label>Confirm Password</Form.Label>
-                        <Form.Control
-                            type="password"
-                            placeholder="Confirm Password"
-                            value={confirmPassword}
-                            onChange={e => setConfirmPassword(e.target.value)}
-                            required
-                            isInvalid ={!!confirmPassword && password !== confirmPassword}
+    if (password !== confirmPassword) {
+      setError(t.auth.passwordMismatch);
+      return;
+    }
 
-                        />
-                        <Form.Control.Feedback type="invalid">
-                            Passwords do not match.
-                        </Form.Control.Feedback>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Select
-                            multiple
-                            value={favouriteGenres.map(g => String(g.genre_id))}
-                            onChange={handleGenreChange}
-                        >
-                            {genres.map(genre => (
-                                <option key={genre.genre_id} value={genre.genre_id} label={genre.genre_name}>
-                                    {genre.genre_name}
-                                </option>
-                            ))}
-                        </Form.Select>
-                        <Form.Text className="text-muted">
-                            Hold Ctrl (Windows) or Cmd (Mac) to select multiple genres.
-                        </Form.Text>
-                    </Form.Group>
-                     <Button
-                        variant="primary"
-                        type="submit"
-                        className="w-100 mb-2"
-                        disabled={loading}
-                        style={{fontWeight: 600, letterSpacing: 1}}
+    if (favouriteGenres.length === 0) {
+      setError(t.auth.selectGenre);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        password,
+        role: "USER",
+        favourite_genres: favouriteGenres,
+      };
+
+      const registerResponse = await axiosClient.post("/register", payload);
+      if (registerResponse.data.error) {
+        setError(registerResponse.data.error);
+        return;
+      }
+
+      const loginResponse = await axiosClient.post("/login", { email, password });
+      if (loginResponse.data.error) {
+        setError(loginResponse.data.error);
+        return;
+      }
+
+      setAuth(loginResponse.data);
+      navigate("/", { replace: true });
+    } catch (submitError) {
+      console.error(submitError);
+      setError(submitError.response?.data?.error || t.auth.registerFailed);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Container fluid className="auth-shell">
+      <div className="auth-panel">
+        <section className="auth-panel__intro">
+          <span className="auth-panel__eyebrow">{t.common.register}</span>
+          <h1>{t.auth.registerTitle}</h1>
+          <p>{t.auth.registerSubtitle}</p>
+          <ul className="auth-panel__list">
+            <li>{t.home.defaultVideoNote}</li>
+            <li>{t.home.openLibrary}</li>
+            <li>{t.home.recommendationPrompt}</li>
+          </ul>
+        </section>
+
+        <section className="auth-panel__form">
+          <div className="mb-4 text-center">
+            <img src={logo} alt="Magic Stream Logo" width={72} className="mb-3" />
+            <h2 className="fw-bold mb-2">{t.common.register}</h2>
+            <p className="text-secondary mb-0">{t.auth.registerSubtitle}</p>
+          </div>
+
+          {error ? <div className="alert alert-danger py-2">{error}</div> : null}
+
+          <Form onSubmit={handleSubmit}>
+            <div className="row">
+              <Form.Group className="mb-3 col-md-6">
+                <Form.Label>{t.auth.firstName}</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  required
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3 col-md-6">
+                <Form.Label>{t.auth.lastName}</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  required
+                />
+              </Form.Group>
+            </div>
+
+            <Form.Group className="mb-3">
+              <Form.Label>{t.auth.email}</Form.Label>
+              <Form.Control
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </Form.Group>
+
+            <div className="row">
+              <Form.Group className="mb-3 col-md-6">
+                <Form.Label>{t.auth.password}</Form.Label>
+                <Form.Control
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-3 col-md-6">
+                <Form.Label>{t.auth.confirmPassword}</Form.Label>
+                <Form.Control
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                  isInvalid={Boolean(confirmPassword) && password !== confirmPassword}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {t.auth.passwordMismatch}
+                </Form.Control.Feedback>
+              </Form.Group>
+            </div>
+
+            <Form.Group className="mb-4">
+              <Form.Label>{t.auth.favouriteGenres}</Form.Label>
+              <div className="auth-genre-grid">
+                {genres.map((genre) => {
+                  const isActive = favouriteGenres.some(
+                    (item) => item.genre_id === genre.genre_id,
+                  );
+
+                  return (
+                    <button
+                      key={genre.genre_id}
+                      type="button"
+                      className={`auth-genre-chip ${isActive ? "is-active" : ""}`}
+                      onClick={() => toggleGenre(genre)}
                     >
-                        {loading ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Registering...
-                            </>
-                        ) : 'Register'}
-                    </Button>                        
-            </Form>
-            </div>           
-       </Container>
+                      {translateGenre(genre.genre_name)}
+                    </button>
+                  );
+                })}
+              </div>
+              <Form.Text className="text-muted">{t.auth.favouriteGenresHint}</Form.Text>
+            </Form.Group>
 
-    )
-}
+            <Button type="submit" className="w-100 rounded-pill py-2" disabled={loading}>
+              {loading ? t.auth.registerLoading : t.auth.registerButton}
+            </Button>
+          </Form>
+
+          <div className="auth-panel__footer">
+            {t.auth.haveAccount} <Link to="/login">{t.auth.goLogin}</Link>
+          </div>
+        </section>
+      </div>
+    </Container>
+  );
+};
+
 export default Register;

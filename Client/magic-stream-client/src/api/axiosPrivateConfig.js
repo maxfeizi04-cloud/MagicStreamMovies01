@@ -1,29 +1,12 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:9090'; // Replace with your API base URL
+import axios from "axios";
+import apiBaseUrl from "./apiBaseUrl";
 
 const axiosPrivate = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: apiBaseUrl,
   headers: {
-    'Content-Type': 'application/json',
-
+    "Content-Type": "application/json",
   },
-  withCredentials: true, // important for HTTP-only cookies
+  withCredentials: true,
 });
-
-// Add a request interceptor to include the token
-// axiosPrivate.interceptors.request.use(
-//   (config) => {
-//     const userString = localStorage.getItem('user'); 
-//     const user = JSON.parse(userString)
-//     if (user) {
-//       config.headers.Authorization = `Bearer ${user?.token}`;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
 
 export default axiosPrivate;

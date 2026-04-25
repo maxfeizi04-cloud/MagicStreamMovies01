@@ -17,15 +17,19 @@ const Recommended = () => {
             try{
                 const response = await axiosPrivate.get('/recommendedmovies');
                 setMovies(response.data);
+                if (response.data.length === 0) {
+                    setMessage("No recommendations are available for this account yet.");
+                }
             } catch (error){
                 console.error("Error fetching recommended movies:", error)
+                setMessage(error.response?.data?.error || "Unable to load recommendations right now.");
             } finally {
                 setLoading(false);
             }
 
         }
         fetchRecommendedMovies();
-    }, [])
+    }, [axiosPrivate])
 
     return (
         <>

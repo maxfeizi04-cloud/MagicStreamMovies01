@@ -1,106 +1,121 @@
-import {useState} from 'react';
-import Container from 'react-bootstrap/Container';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import axiosClient from '../../api/axiosConfig';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth';
-import logo from '../../assets/MagicStreamLogo.png';
+import { useEffect, useState } from "react";
+import Button from "react-bootstrap/Button";
+import Container from "react-bootstrap/Container";
+import Form from "react-bootstrap/Form";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import axiosClient from "../../api/axiosConfig";
+import useAuth from "../../hooks/useAuth";
+import useLanguage from "../../hooks/useLanguage";
+import logo from "../../assets/MagicStreamLogo.png";
+import "../auth/AuthPage.css";
 
 const Login = () => {
-    
-    const {setAuth} = useAuth();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+  const { auth, setAuth } = useAuth();
+  const { t } = useLanguage();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const from = location.state?.from?.pathname || "/";
-    
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);       
+  useEffect(() => {
+    if (auth) {
+      navigate("/", { replace: true });
+    }
+  }, [auth, navigate]);
 
-        try {
-            const response = await axiosClient.post('/login', { email, password });
-            console.log(response.data);
-            if (response.data.error) {
-                setError(response.data.error);
-                return;
-            }
-           // console.log(response.data);
-            setAuth(response.data);
-            
-           // localStorage.setItem('user', JSON.stringify(response.data));
-            // Handle successful login (e.g., store token, redirect)
-           navigate(from, {replace: true});
-           //navigate('/');
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        } catch (err) {
-            console.error(err);
-            setError('Invalid email or password');
-        } finally {
-            setLoading(false);
-        }
-    }; 
-    return (
-        <Container className="login-container d-flex align-items-center justify-content-center min-vh-100">
-            <div className="login-card shadow p-4 rounded bg-white" style={{maxWidth: 400, width: '100%'}}>
-                <div className="text-center mb-4">
-                    <img src={logo} alt="Logo" width={60} className="mb-2" />
-                    <h2 className="fw-bold">Sign In</h2>
-                    <p className="text-muted">Welcome back! Please login to your account.</p>
-                </div>
-                {error && <div className="alert alert-danger py-2">{error}</div>}
-                <Form onSubmit={handleSubmit}>
-                    <Form.Group controlId="formBasicEmail" className="mb-3">
-                        <Form.Label>Email address</Form.Label>
-                        <Form.Control
-                            type="email"
-                            placeholder="Enter email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            autoFocus
-                        />
-                    </Form.Group>
+    try {
+      const response = await axiosClient.post("/login", { email, password });
+      if (response.data.error) {
+        setError(response.data.error);
+        return;
+      }
 
-                    <Form.Group controlId="formBasicPassword" className="mb-3">
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </Form.Group>
+      setAuth(response.data);
+      navigate(location.state?.from?.pathname || "/", {
+        replace: true,
+        state: {
+          requestedMovieId: location.state?.requestedMovieId,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || t.auth.invalidCredentials);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        className="w-100 mb-2"
-                        disabled={loading}
-                        style={{fontWeight: 600, letterSpacing: 1}}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Logging in...
-                            </>
-                        ) : 'Login'}
-                    </Button>
-                </Form>
-                <div className="text-center mt-3">
-                    <span className="text-muted">Don't have an account? </span>
-                    <Link to="/register" className="fw-semibold">Register here</Link>
-                </div>
-            </div>
-        </Container>
-    )
-}
+  return (
+    <Container fluid className="auth-shell">
+      <div className="auth-panel">
+        <section className="auth-panel__intro">
+          <span className="auth-panel__eyebrow">{t.common.login}</span>
+          <h1>{t.auth.loginTitle}</h1>
+          <p>{t.auth.loginSubtitle}</p>
+          <ul className="auth-panel__list">
+            <li>{t.home.defaultVideoNote}</li>
+            <li>{t.home.openLibrary}</li>
+            <li>{t.home.recommendationPrompt}</li>
+          </ul>
+        </section>
+
+        <section className="auth-panel__form">
+          <div className="mb-4 text-center">
+            <img src={logo} alt="Magic Stream Logo" width={72} className="mb-3" />
+            <h2 className="fw-bold mb-2">{t.common.login}</h2>
+            <p className="text-secondary mb-0">{t.auth.loginSubtitle}</p>
+          </div>
+
+          {error ? <div className="alert alert-danger py-2">{error}</div> : null}
+
+          <Form onSubmit={handleSubmit}>
+            <Form.Group controlId="loginEmail" className="mb-3">
+              <Form.Label>{t.auth.email}</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder={t.auth.email}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoFocus
+              />
+            </Form.Group>
+
+            <Form.Group controlId="loginPassword" className="mb-4">
+              <Form.Label>{t.auth.password}</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder={t.auth.password}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </Form.Group>
+
+            <Button type="submit" className="w-100 rounded-pill py-2" disabled={loading}>
+              {loading ? t.auth.loginLoading : t.auth.loginButton}
+            </Button>
+          </Form>
+
+          <div className="auth-panel__footer">
+            {t.auth.noAccount} <Link to="/register">{t.auth.goRegister}</Link>
+          </div>
+
+          <Link className="auth-panel__guest" to="/">
+            {t.auth.guestMode}
+          </Link>
+        </section>
+      </div>
+    </Container>
+  );
+};
+
 export default Login;

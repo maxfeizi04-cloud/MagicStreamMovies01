@@ -1,0 +1,143 @@
+.auth-shell {
+  padding: 2.5rem 1rem 3rem;
+}
+
+.auth-panel {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1.05fr);
+  max-width: 1120px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(173, 193, 212, 0.56);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(116, 151, 183, 0.18);
+}
+
+.auth-panel__intro {
+  padding: 2.4rem;
+  background:
+    radial-gradient(circle at top right, rgba(134, 206, 255, 0.34), transparent 36%),
+    linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%);
+  color: #17314a;
+}
+
+.auth-panel__eyebrow {
+  display: inline-block;
+  padding: 0.4rem 0.78rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #64819a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-panel__intro h1 {
+  margin: 1.1rem 0 0.85rem;
+  font-size: clamp(2.05rem, 4vw, 3.3rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.auth-panel__intro p {
+  color: #59748b;
+  line-height: 1.7;
+}
+
+.auth-panel__list {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.auth-panel__list li {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(173, 193, 212, 0.45);
+  color: #49657b;
+}
+
+.auth-panel__form {
+  padding: 2.4rem;
+  background: #fffdf9;
+}
+
+.auth-panel__form .form-label {
+  color: #38566f;
+  font-weight: 700;
+}
+
+.auth-panel__form .form-control,
+.auth-panel__form .form-select {
+  min-height: 48px;
+  border-radius: 16px;
+  border-color: rgba(133, 164, 191, 0.35);
+  box-shadow: none;
+  background: #ffffff;
+}
+
+.auth-panel__form .form-control:focus,
+.auth-panel__form .form-select:focus {
+  border-color: #7fb7eb;
+  box-shadow: 0 0 0 0.2rem rgba(127, 183, 235, 0.18);
+}
+
+.auth-genre-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.auth-genre-chip {
+  border: 1px solid rgba(128, 160, 188, 0.3);
+  background: #f7fafc;
+  color: #4d6a82;
+  padding: 0.62rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.auth-genre-chip.is-active {
+  border-color: rgba(57, 131, 201, 0.28);
+  background: #dff0ff;
+  color: #14548c;
+}
+
+.auth-panel__footer {
+  margin-top: 1.2rem;
+  color: #64819a;
+  font-size: 0.95rem;
+}
+
+.auth-panel__footer a {
+  color: #14548c;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.auth-panel__guest {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #557087;
+  text-decoration: none;
+}
+
+@media (max-width: 991px) {
+  .auth-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-panel__intro,
+  .auth-panel__form {
+    padding: 1.5rem;
+  }
+}
