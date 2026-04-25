@@ -5,8 +5,7 @@ MagicStream 是一个前后端分离的全栈示例项目：
 - 后端：Go + Gin
 - 前端：React + Vite
 - 数据库：MongoDB
-
-这次已经为仓库补上了可直接使用的 Docker 部署文件，以及一套最小可用的 GitHub Actions CI/CD 流水线。
+  
 
 ## 目录说明
 
