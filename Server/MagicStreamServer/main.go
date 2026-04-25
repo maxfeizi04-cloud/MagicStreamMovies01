@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/database"
+	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/middleware"
 	"github.com/GavinLonDigital/MagicStream/Server/MagicStreamServer/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -18,17 +22,6 @@ import (
 
 func main() {
 	router := gin.Default()
-
-	router.GET("/hello", func(c *gin.Context) {
-		c.String(200, "Hello, MagicStreamMovies!")
-	})
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"service": "MagicStream API",
-			"status":  "ok",
-			"time":    time.Now().UTC(),
-		})
-	})
 
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -40,17 +33,35 @@ func main() {
 		log.Println("Allowed Origin:", origin)
 	}
 
+	requestLimit := resolvePositiveIntFromEnv("MAX_CONCURRENT_REQUESTS", 128)
+	requestWaitTimeout := resolveDurationFromEnvMS("REQUEST_LIMIT_WAIT_MS", 250*time.Millisecond)
+	reviewLimit := resolvePositiveIntFromEnv("ADMIN_REVIEW_MAX_CONCURRENT", 4)
+	reviewWaitTimeout := resolveDurationFromEnvMS("ADMIN_REVIEW_WAIT_MS", 500*time.Millisecond)
+
+	log.Printf("Global request concurrency limit=%d wait_timeout=%s", requestLimit, requestWaitTimeout)
+	log.Printf("Admin review concurrency limit=%d wait_timeout=%s", reviewLimit, reviewWaitTimeout)
+
 	config := cors.Config{}
 	config.AllowOrigins = origins
 	config.AllowMethods = []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"}
-	//config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	config.ExposeHeaders = []string{"Content-Length"}
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour
 
 	router.Use(cors.New(config))
-	router.Use(gin.Logger())
+	router.Use(middleware.NewConcurrencyLimiter("global_requests", requestLimit, requestWaitTimeout))
+
+	router.GET("/hello", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello, MagicStreamMovies!")
+	})
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"service": "MagicStream API",
+			"status":  "ok",
+			"time":    time.Now().UTC(),
+		})
+	})
 
 	var client *mongo.Client = database.Connect()
 
@@ -62,17 +73,30 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
 		}
-
 	}()
 
 	routes.SetupUnProtectedRoutes(router, client)
-	routes.SetupProtectedRoutes(router, client)
+	routes.SetupProtectedRoutes(
+		router,
+		client,
+		middleware.NewConcurrencyLimiter("admin_review", reviewLimit, reviewWaitTimeout),
+	)
 
-	if err := router.Run(":8080"); err != nil {
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Println("Failed to start server", err)
 	}
 }
 
+// resolveAllowedOrigins 合并默认来源与环境变量来源，并去重后返回。
 func resolveAllowedOrigins(raw string) []string {
 	origins := []string{
 		"http://localhost:5173",
@@ -106,4 +130,34 @@ func resolveAllowedOrigins(raw string) []string {
 	}
 
 	return resolved
+}
+
+func resolvePositiveIntFromEnv(key string, fallback int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 1 {
+		log.Printf("Warning: invalid %s=%q, fallback to %d", key, value, fallback)
+		return fallback
+	}
+
+	return parsed
+}
+
+func resolveDurationFromEnvMS(key string, fallback time.Duration) time.Duration {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		log.Printf("Warning: invalid %s=%q, fallback to %s", key, value, fallback)
+		return fallback
+	}
+
+	return time.Duration(parsed) * time.Millisecond
 }

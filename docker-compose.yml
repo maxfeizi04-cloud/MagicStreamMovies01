@@ -1,0 +1,73 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval \"db.adminCommand('ping').ok\" || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    image: ${BACKEND_IMAGE:-magicstream-backend:local}
+    build:
+      context: ./Server/MagicStreamServer
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      GIN_MODE: release
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017}
+      DATABASE_NAME: ${DATABASE_NAME:-magicstream}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      SECRET_KEY: ${SECRET_KEY:-dev_access_secret_key}
+      SECRET_REFRESH_KEY: ${SECRET_REFRESH_KEY:-dev_refresh_secret_key}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-dummy_dev_key}
+      BASE_PROMPT_TEMPLATE: "${BASE_PROMPT_TEMPLATE:-Please classify the following review into one of these rankings: {rankings}. Only return the ranking name. Review:}"
+      RECOMMENDED_MOVIE_LIMIT: ${RECOMMENDED_MOVIE_LIMIT:-5}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-magicstream-frontend:local}
+    build:
+      context: ./Client/magic-stream-client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+  mongo-seed:
+    profiles:
+      - seed
+    image: mongo:8.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGO_URI: ${MONGODB_URI:-mongodb://mongodb:27017}
+      DATABASE_NAME: ${DATABASE_NAME:-magicstream}
+    volumes:
+      - ./magic-stream-seed-data:/seed-data:ro
+      - ./docker/mongo/import.sh:/scripts/import.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/import.sh"]
+    restart: "no"
+
+volumes:
+  mongo-data:

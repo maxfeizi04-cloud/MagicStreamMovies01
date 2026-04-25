@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+// SetupUnProtectedRoutes 注册无需认证即可访问的路由。
 func SetupUnProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 
 	router.GET("/movies", controller.GetMovies(client))

@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+// SignedDetails 定义 MagicStream 会话使用的 JWT 声明内容。
 type SignedDetails struct {
 	Email     string
 	FirstName string
@@ -23,6 +24,7 @@ type SignedDetails struct {
 	jwt.RegisteredClaims
 }
 
+// GenerateAllTokens 为用户生成新的访问令牌和刷新令牌。
 func GenerateAllTokens(email, firstName, lastName, role, userId string) (string, string, error) {
 	secretKey, err := loadEnvValue("SECRET_KEY")
 	if err != nil {
@@ -72,6 +74,7 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 	return signedToken, signedRefreshToken, nil
 }
 
+// UpdateAllTokens 持久化保存用户最新的访问令牌和刷新令牌。
 func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
@@ -91,6 +94,7 @@ func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) e
 	return err
 }
 
+// GetAccessToken 从请求 Cookie 中读取访问令牌。
 func GetAccessToken(c *gin.Context) (string, error) {
 	tokenString, err := c.Cookie(AccessTokenCookieName())
 	if err != nil {
@@ -100,6 +104,7 @@ func GetAccessToken(c *gin.Context) (string, error) {
 	return tokenString, nil
 }
 
+// ValidateToken 校验访问令牌的签名和过期时间。
 func ValidateToken(tokenString string) (*SignedDetails, error) {
 	secretKey, err := loadEnvValue("SECRET_KEY")
 	if err != nil {
@@ -125,6 +130,7 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 	return claims, nil
 }
 
+// GetUserIdFromContext 从 Gin 上下文中提取已认证用户 ID。
 func GetUserIdFromContext(c *gin.Context) (string, error) {
 	userId, exists := c.Get("userId")
 	if !exists {
@@ -139,6 +145,7 @@ func GetUserIdFromContext(c *gin.Context) (string, error) {
 	return id, nil
 }
 
+// GetRoleFromContext 从 Gin 上下文中提取已认证用户角色。
 func GetRoleFromContext(c *gin.Context) (string, error) {
 	role, exists := c.Get("role")
 	if !exists {
@@ -153,6 +160,7 @@ func GetRoleFromContext(c *gin.Context) (string, error) {
 	return memberRole, nil
 }
 
+// ValidateRefreshToken 校验刷新令牌的签名和过期时间。
 func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
 	refreshSecretKey, err := loadEnvValue("SECRET_REFRESH_KEY")
 	if err != nil {
@@ -178,6 +186,7 @@ func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
 	return claims, nil
 }
 
+// loadEnvValue 读取指定环境变量，不存在时返回错误。
 func loadEnvValue(key string) (string, error) {
 	_ = godotenv.Load(".env")
 

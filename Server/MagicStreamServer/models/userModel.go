@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
+// User 表示持久化到 MongoDB 的系统用户。
 type User struct {
 	ID              bson.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	UserID          string        `json:"user_id" bson:"user_id"`
@@ -20,10 +21,14 @@ type User struct {
 	RefreshToken    string        `json:"refresh_token" bson:"refresh_token"`
 	FavouriteGenres []Genre       `json:"favourite_genres" bson:"favourite_genres" validate:"required,dive"`
 }
+
+// UserLogin 表示登录时需要提交的凭证。
 type UserLogin struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 }
+
+// UserResponse 表示认证成功后返回给前端的安全用户信息。
 type UserResponse struct {
 	UserId          string  `json:"user_id"`
 	FirstName       string  `json:"first_name"`

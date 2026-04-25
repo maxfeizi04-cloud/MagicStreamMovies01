@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+.omx
+.env
+bin
+app
+*.exe
+*.dll
+*.out

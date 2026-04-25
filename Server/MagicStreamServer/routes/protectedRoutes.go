@@ -7,11 +7,19 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
-	router.Use(middleware.AuthMiddleWare())
+// SetupProtectedRoutes 注册需要认证后才能访问的路由。
+func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client, reviewLimiter gin.HandlerFunc) {
+	protected := router.Group("/")
+	protected.Use(middleware.AuthMiddleWare())
 
-	router.GET("/movie/:imdb_id", controller.GetMovie(client))
-	router.POST("/addmovie", controller.AddMovie(client))
-	router.GET("/recommendedmovies", controller.GetRecommendedMovies(client))
-	router.PATCH("/updatereview/:imdb_id", controller.AdminReviewUpdate(client))
+	protected.GET("/movie/:imdb_id", controller.GetMovie(client))
+	protected.POST("/addmovie", controller.AddMovie(client))
+	protected.GET("/recommendedmovies", controller.GetRecommendedMovies(client))
+
+	if reviewLimiter != nil {
+		protected.PATCH("/updatereview/:imdb_id", reviewLimiter, controller.AdminReviewUpdate(client))
+		return
+	}
+
+	protected.PATCH("/updatereview/:imdb_id", controller.AdminReviewUpdate(client))
 }

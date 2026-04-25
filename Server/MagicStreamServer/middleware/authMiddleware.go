@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AuthMiddleWare 校验访问令牌并将用户身份写入请求上下文。
 func AuthMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := utils.GetAccessToken(c)

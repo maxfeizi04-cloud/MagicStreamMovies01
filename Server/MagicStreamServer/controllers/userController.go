@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// HashPassword 使用 bcrypt 对明文密码进行哈希。
 func HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -24,6 +25,7 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
+// RegisterUser 校验注册请求并创建新用户。
 func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
@@ -74,6 +76,7 @@ func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// LoginUser 验证用户身份并下发会话 Cookie。
 func LoginUser(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var userLogin models.UserLogin
@@ -131,6 +134,7 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// LogoutHandler 清空已保存的令牌并移除用户会话 Cookie。
 func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var userLogout struct {
@@ -154,6 +158,7 @@ func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// RefreshTokenHandler 使用有效的刷新令牌 Cookie 轮换令牌。
 func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)

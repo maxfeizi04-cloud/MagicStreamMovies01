@@ -24,6 +24,7 @@ import (
 
 var validate = validator.New()
 
+// GetMovies 返回 movies 集合中的全部影片。
 func GetMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
@@ -50,6 +51,7 @@ func GetMovies(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// GetMovie 根据 IMDb 编号返回单个影片。
 func GetMovie(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
@@ -78,6 +80,7 @@ func GetMovie(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// AddMovie 校验请求体并保存新的影片数据。
 func AddMovie(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
@@ -107,6 +110,7 @@ func AddMovie(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// AdminReviewUpdate 更新影片的管理员评论和评级结果。
 func AdminReviewUpdate(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -179,6 +183,7 @@ func AdminReviewUpdate(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// GetReviewRanking 将管理员评论归类到已配置的评级中。
 func GetReviewRanking(admin_review string, client *mongo.Client, c *gin.Context) (string, int, error) {
 	rankings, err := GetRankings(client, c)
 
@@ -235,6 +240,7 @@ func GetReviewRanking(admin_review string, client *mongo.Client, c *gin.Context)
 
 }
 
+// GetRankings 从数据库加载可用的评级定义。
 func GetRankings(client *mongo.Client, c *gin.Context) ([]models.Ranking, error) {
 	var rankings []models.Ranking
 
@@ -258,6 +264,7 @@ func GetRankings(client *mongo.Client, c *gin.Context) ([]models.Ranking, error)
 
 }
 
+// GetRecommendedMovies 根据用户偏好类型返回推荐影片。
 func GetRecommendedMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, err := utils.GetUserIdFromContext(c)
@@ -319,6 +326,7 @@ func GetRecommendedMovies(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// GetUsersFavouriteGenres 读取用户收藏的影片类型名称。
 func GetUsersFavouriteGenres(userId string, client *mongo.Client, c *gin.Context) ([]string, error) {
 
 	var ctx, cancel = context.WithTimeout(c, 100*time.Second)
@@ -367,6 +375,7 @@ func GetUsersFavouriteGenres(userId string, client *mongo.Client, c *gin.Context
 
 }
 
+// GetGenres 返回系统支持的影片类型列表。
 func GetGenres(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(c, 100*time.Second)

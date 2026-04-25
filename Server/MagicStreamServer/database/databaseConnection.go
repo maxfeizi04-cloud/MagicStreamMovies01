@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// Connect 根据环境变量配置创建 MongoDB 客户端。
 func Connect() *mongo.Client {
 
 	err := godotenv.Load(".env")
@@ -39,6 +40,7 @@ func Connect() *mongo.Client {
 
 //var Client *mongo.Client = DBInstance()
 
+// OpenCollection 根据配置的数据库名称获取集合句柄。
 func OpenCollection(collectionName string, client *mongo.Client) *mongo.Collection {
 
 	err := godotenv.Load(".env")
