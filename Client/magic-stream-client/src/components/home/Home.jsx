@@ -170,12 +170,13 @@ const Home = () => {
         <div className="home-player-card">
           <span className="home-player-card__eyebrow">{t.home.nowPlaying}</span>
           <div className="home-player-card__frame">
-            <ReactPlayer
-              controls
-              playing={false}
-              url={`https://www.youtube.com/watch?v=${selectedMovie.youtube_id}`}
-              width="100%"
-              height="100%"
+            <iframe
+              src={`https://www.youtube.com/embed/${selectedMovie.youtube_id}`}
+              title={selectedMovie.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
             />
           </div>
         </div>

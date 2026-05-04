@@ -84,6 +84,9 @@ export const translations = {
       guestLocked: "未登录时只能查看第一个默认视频，其他视频请先登录。",
       description: "当前页面展示选中的影片内容。",
     },
+    footer: {
+      copy: "© 2026 MagicStream. All rights reserved.",
+    },
   },
   en: {
     common: {
@@ -169,6 +172,9 @@ export const translations = {
       title: "Streaming",
       guestLocked: "Guests can only watch the first default video. Login to access other videos.",
       description: "This page shows the selected movie content.",
+    },
+    footer: {
+      copy: "© 2026 MagicStream. All rights reserved.",
     },
   },
 };

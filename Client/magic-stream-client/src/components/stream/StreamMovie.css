@@ -1,3 +1,65 @@
-.react-player-container{
-    height: 90vh;
+.stream-page {
+  min-height: calc(100vh - 76px);
+  background: #0a0f1a;
+  display: flex;
+  flex-direction: column;
+}
+
+.stream-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stream-topbar__back {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.stream-topbar__back:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.stream-topbar__label {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stream-player-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  min-height: 0;
+}
+
+.stream-player-wrap__inner {
+  position: relative;
+  width: 100%;
+  max-width: 1400px;
+  padding-bottom: 56.25%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.stream-player-wrap__empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 4rem 2rem;
 }
