@@ -17,6 +17,7 @@ Server/MagicStreamServer/bin/
 .idea/
 .omx/
 .publish-export/
+.claude
 
 # Environment files
 Client/magic-stream-client/.env
